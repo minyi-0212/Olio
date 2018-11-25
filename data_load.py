@@ -1,4 +1,3 @@
-import torchvision.datasets as datasets
 import os
 
 class ImageLoader(object):
@@ -14,3 +13,32 @@ class ImageLoader(object):
 
     def get_image_filename(self, index):
         return self.image[index]
+
+import torch
+from PIL import Image
+from torch.utils.data import Dataset, DataLoader
+
+def default_loader(path):
+    return Image.open(path).convert('RGB')
+
+class MyDataSet(Dataset):
+    def __init__(self, path, transform=None, target_transform=None, loader=default_loader):
+        images = []
+        files = os.listdir(path)
+        for file in files:
+            if file[0] != '.' and file.split('.')[-1] in ['jpg', 'png']:
+                images.append([path + "/" + file, 1])
+        self.imgs = images
+        self.transform = transform
+        self.target_transform = target_transform
+        self.loader = loader
+
+    def __getitem__(self, index):
+        file, label = self.imgs[index]
+        img = self.loader(file)
+        if self.transform is not None:
+            img = self.transform(img)
+        return img, label
+
+    def __len__(self):
+        return len(self.imgs)
