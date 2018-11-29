@@ -22,12 +22,24 @@ def default_loader(path):
     return Image.open(path).convert('RGB')
 
 class MyDataSet(Dataset):
-    def __init__(self, path, transform=None, target_transform=None, loader=default_loader):
+    def __init__(self, path, transform=None, target_transform=None, loader=default_loader, size = None):
         images = []
+        id = 0
         files = os.listdir(path)
-        for file in files:
-            if file[0] != '.' and file.split('.')[-1] in ['jpg', 'png']:
-                images.append([path + "/" + file, 1])
+        if size is not None:
+            for file in files:
+                if id >= size:
+                    break
+                if file[0] != '.' and file.split('.')[-1] in ['jpg', 'png']:
+                    images.append([path + "/" + file, id])
+                    id += 1
+        else:
+            for file in files:
+                if file[0] != '.' and file.split('.')[-1] in ['jpg', 'png']:
+                    images.append([path + "/" + file, id])
+                    id += 1
+
+
         self.imgs = images
         self.transform = transform
         self.target_transform = target_transform

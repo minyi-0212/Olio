@@ -77,9 +77,18 @@ def test_MyDataLoader():
             plt.axis('off')
             plt.show()
 
+from torchvision import models
+def model_vgg16_test():
+    vgg16 = models.vgg16(pretrained=True)
+    pretrained_dict = vgg16.state_dict()
+    print(vgg16.features)
+    # for k, v in pretrained_dict.items():
+    #     print(k, v.size())
+
 if __name__ == '__main__':
     # test_net()
     # test_image_load()
     # test_DataLoader()
     # test_MyDataLoader()
+    model_vgg16_test()
     print('ok')
