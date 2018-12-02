@@ -1,6 +1,7 @@
 import pylab
-from PIL import Image
 import matplotlib.pyplot as plt
+import torchvision
+from PIL import Image
 
 def load_image(filename, size=None, scale=None):
     img = Image.open(filename).convert('RGB')
@@ -27,9 +28,8 @@ def show_image(image, size=None, scale=None):
     plt.imshow(image)
     pylab.show()
 
-def gram_matrix(y):
-    (b, ch, h, w) = y.size()
-    features = y.view(b, ch, w * h)
-    features_t = features.transpose(1, 2)
-    gram = features.bmm(features_t) / (ch * h * w)
-    return gram
+def show_imgs(imgs):
+    grid = torchvision.utils.make_grid(imgs)
+    plt.imshow(grid.numpy().transpose((1, 2, 0)))
+    plt.title('Batch from dataloader')
+    plt.show()

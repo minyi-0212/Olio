@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from torch.nn.modules import Sequential
-from torch.autograd import Variable
 
 
 class Interpolate(nn.Module):
@@ -68,5 +67,5 @@ class StyleBankNet(nn.Module):
                 data_out.append(style_out*feature[0])
             data_out = torch.cat(data_out, dim=0)
             data_out = self.decoder_net(data_out)
-            print(data_out.size())
+            # print(data_out.size())
             return data_out

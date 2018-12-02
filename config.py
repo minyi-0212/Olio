@@ -1,7 +1,7 @@
 
 def config():
     cfg = {
-        'epochs' : 1,
+        'epochs' : 10,
         'LOG_INTERVAL' : 200,
         'content_filepath' : './content',
         'style_filepath' : './style',

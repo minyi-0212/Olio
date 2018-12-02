@@ -26,7 +26,7 @@ if __name__ == '__main__':
     if cfg['debug'] != 0:
         print(len(content_data_loader))
         for index, (image, label) in enumerate(content_data_loader):
-            if (index < 2):
+            if index < 2:
                 print(index, image.size(), label.size())
                 grid = utils.make_grid(image)
                 plt.imshow(grid.numpy().transpose((1, 2, 0)))
@@ -36,11 +36,11 @@ if __name__ == '__main__':
 
     # init
     style_bank_net = StyleBankNet(cfg['style_size'])
-    vgg16 = models.vgg16(pretrained=True)
+    vgg16 = models.vgg16(pretrained=True).features
     style_bank_loss = StyleBnakLoss(vgg16)
     style_bank_net.train()  # 把模型的状态设置为训练状态，主要针对Dropout层
     # optimizer = torch.optim.SGD(style_bank_net.parameters())
-    optimizer = torch.optim.SGD(style_bank_net.parameters(), lr = cfg['lr'], momentum = cfg['momentum'])
+    optimizer = torch.optim.SGD(style_bank_net.parameters(), lr=cfg['lr'], momentum=cfg['momentum'])
     cuda_is_available = torch.cuda.is_available() & cfg['GPU']
     if cuda_is_available:
         print('cuda...')
@@ -49,15 +49,19 @@ if __name__ == '__main__':
 
     # train
     for epoch in range(cfg['epochs']):
-        for index, (image, label) in enumerate(content_data_loader):
+        for index, (content_image, content_label) in enumerate(content_data_loader):
             if cuda_is_available:
                 print('cuda...')
-                data = image.cuda()
-            #forward
+                data = content_image.cuda()
+            # forward
             # output = style_bank_net(image)  # 对data做前向过程，得到输出
-            output = style_bank_net(image, style_imgs, style_labels)  # 对data做前向过程，得到输出
-            loss = style_bank_loss(output)  # 计算output和target之间的损失
-            print('train loss:', loss)
-            # loss.backward()  # 反向过程，计算损失关于各参数的梯度
-            # optimizer.step()  # 利用计算得到的梯度对参数进行更新
-
+            print(content_image.size())
+            show_imgs(content_image)
+            show_imgs(style_imgs[0].view(1,3,50,50))
+            output = style_bank_net.forward(content_image, style_imgs, style_labels)  # 对data做前向过程，得到输出
+            print(output.size())
+            show_imgs(output.data[0].view(1,3,50,50))
+            loss = style_bank_loss.forward(output, content_image, style_imgs)  # 计算output和target之间的损失
+            print('{}/{} iter, index {}\ntrain loss: {}'.format(epoch, cfg['epochs'], index, loss))
+            loss.backward()  # 反向过程，计算损失关于各参数的梯度
+            optimizer.step()  # 利用计算得到的梯度对参数进行更新

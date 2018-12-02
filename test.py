@@ -89,6 +89,6 @@ if __name__ == '__main__':
     # test_net()
     # test_image_load()
     # test_DataLoader()
-    # test_MyDataLoader()
-    model_vgg16_test()
+    test_MyDataLoader()
+    # model_vgg16_test()
     print('ok')
