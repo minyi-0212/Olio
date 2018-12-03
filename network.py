@@ -36,6 +36,7 @@ class StyleBankNet(nn.Module):
                 nn.InstanceNorm2d(128),
                 nn.ReLU(inplace=True),
             ) for i in range(style_cnt)])
+        print('style_bank_cnt:{}'.format(style_cnt))
 
         self.decoder_net = Sequential(
             Interpolate(2),
@@ -46,7 +47,7 @@ class StyleBankNet(nn.Module):
             nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1, bias=False),
             nn.InstanceNorm2d(32),
             nn.ReLU(inplace=True),
-            nn.Conv2d(32, 3, kernel_size=9, stride=1, padding=3, bias=False)
+            nn.Conv2d(32, 3, kernel_size=9, stride=1, padding=4, bias=False)
         )
 
     def forward(self, content_in, style_data = None, style_label = None):
@@ -56,7 +57,9 @@ class StyleBankNet(nn.Module):
             return data_out
         else:
             data = []
+            # print('content size {}'.format(len(content_in)))
             data.append(content_in)
+            # print('style size {}'.format(len(style_data)))
             data.append(style_data)
             feature = torch.cat(data, dim=0)
             # print(feature.size())

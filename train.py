@@ -7,14 +7,16 @@ from loss_function import StyleBnakLoss
 import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms, utils, models
+import cv2
 
 if __name__ == '__main__':
     cfg = config()
     print('content file : {}'.format(cfg['content_filepath']))
 
     # load data
+    img_size = 64
     transform = transforms.Compose([
-        transforms.CenterCrop(50),
+        transforms.CenterCrop(img_size),
         transforms.ToTensor()
     ])
     content_data = MyDataSet(path=cfg['content_filepath'], transform=transform)
@@ -46,22 +48,38 @@ if __name__ == '__main__':
         print('cuda...')
         style_bank_net.cuda()
         style_bank_loss.cuda()
+    grid = torchvision.utils.make_grid(style_imgs.view(-1, 3, img_size, img_size), nrow=5)
+    plt.imsave('output_image/style.png', grid.numpy().transpose((1, 2, 0)))
 
     # train
+    # for index, (content_image, content_label) in enumerate(content_data_loader):
+    #     if cuda_is_available:
+    #         print('cuda...')
+    #         data = content_image.cuda()
+    index = 4
+    content_image, content_label = next(iter(content_data_loader))
+    grid = torchvision.utils.make_grid(content_image.view(-1, 3, img_size, img_size), nrow=5)
+    plt.imsave('output_image/content.png', grid.numpy().transpose((1, 2, 0)))
     for epoch in range(cfg['epochs']):
-        for index, (content_image, content_label) in enumerate(content_data_loader):
-            if cuda_is_available:
-                print('cuda...')
-                data = content_image.cuda()
             # forward
             # output = style_bank_net(image)  # 对data做前向过程，得到输出
-            print(content_image.size())
-            show_imgs(content_image)
-            show_imgs(style_imgs[0].view(1,3,50,50))
-            output = style_bank_net.forward(content_image, style_imgs, style_labels)  # 对data做前向过程，得到输出
-            print(output.size())
-            show_imgs(output.data[0].view(1,3,50,50))
-            loss = style_bank_loss.forward(output, content_image, style_imgs)  # 计算output和target之间的损失
-            print('{}/{} iter, index {}\ntrain loss: {}'.format(epoch, cfg['epochs'], index, loss))
+            # print(content_image.size())
+
+            # show_imgs(content_image)
+
+            # show_imgs(style_imgs.view(-1,3,50,50))
+            optimizer.zero_grad()
+            output = style_bank_net(content_image, style_imgs, style_labels)  # 对data做前向过程，得到输出
+            print('ouyput size:{}'.format(output.size()))
+            if epoch%100 == 0:
+                grid = torchvision.utils.make_grid(output.data.view(-1,3,img_size,img_size), nrow=5).numpy().transpose((1, 2, 0))
+                plt.imsave('output_image/iter{}_{}_index{}'.format(epoch, cfg['epochs'], index), grid)
+                # print(grid.size())
+                # plt.imshow(grid)
+                # plt.title('{}/{} iter, index {}'.format(epoch, cfg['epochs'], index))
+                # plt.show()
+
+            loss = style_bank_loss(output, content_image, style_imgs)  # 计算output和target之间的损失
+            print('{}/{} iter, index {}   train loss: {}'.format(epoch, cfg['epochs'], index, loss))
             loss.backward()  # 反向过程，计算损失关于各参数的梯度
             optimizer.step()  # 利用计算得到的梯度对参数进行更新
