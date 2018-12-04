@@ -25,7 +25,7 @@ class StyleBnakLoss(torch.nn.Module):
     def __init__(self, vgg_model):
         super(StyleBnakLoss, self).__init__()
         self.content_weight = 1
-        self.style_weight = 1000
+        self.style_weight = 100
         self.tv_weight = 1
         self.vgg_layer_content_used = {
             '20': "relu4_2"
@@ -46,14 +46,18 @@ class StyleBnakLoss(torch.nn.Module):
 
     def forward(self, O, I, S):
         # print('Output size:', O.size())
-        batch, channels, height, width = O.size()
+        # batch, channels, height, width = O.size()
         content_loss = 0
+        # print('{}*{} of content'.format(len(I), batch))
+        style_loss = 0
+        style_size = len(S)
+        for j in range(len(I)):  # 2
+            for i in range(style_size):  # 5
+                content_loss += MSE(self.content_loss(O[j*style_size + i]), (self.content_loss(I[j])))
         for j in range(len(I)):
-            for i in range(batch):
-                content_loss += MSE(self.content_loss(O[i]), (self.content_loss(I[j])))
-        style_loss =  MSE(gram_matrix(self.style_loss(O)), gram_matrix((self.style_loss(S))))
+            style_loss +=  MSE(gram_matrix(self.style_loss(O[j*style_size:(j+1)*style_size])), gram_matrix((self.style_loss(S))))
         total_variation_loss = tv_loss(O)
 
         loss = self.content_weight * content_loss + self.style_weight * style_loss + self.tv_weight * total_variation_loss
-        print(self.content_weight * content_loss, self.style_weight * style_loss, self.tv_weight * total_variation_loss)
+        # print(self.content_weight * content_loss, self.style_weight * style_loss, self.tv_weight * total_variation_loss)
         return loss

@@ -19,10 +19,10 @@ class StyleBankNet(nn.Module):
             nn.Conv2d(3, 32, kernel_size=9, stride=1, padding=4, bias=False),
             nn.InstanceNorm2d(32),
             nn.ReLU(inplace=True),
-            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1, bias=False),
             nn.InstanceNorm2d(64),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, bias=False),
             nn.InstanceNorm2d(128),
             nn.ReLU(inplace=True)
         )
@@ -39,11 +39,11 @@ class StyleBankNet(nn.Module):
         print('style_bank_cnt:{}'.format(style_cnt))
 
         self.decoder_net = Sequential(
-            Interpolate(2),
+            # Interpolate(2),
             nn.Conv2d(128, 64, kernel_size=3, stride=1, padding=1, bias=False),
             nn.InstanceNorm2d(64),
             nn.ReLU(inplace=True),
-            Interpolate(2),
+            # Interpolate(2),
             nn.Conv2d(64, 32, kernel_size=3, stride=1, padding=1, bias=False),
             nn.InstanceNorm2d(32),
             nn.ReLU(inplace=True),
@@ -65,9 +65,11 @@ class StyleBankNet(nn.Module):
             # print(feature.size())
             feature = self.encoder_net(feature)  # 128*H*W
             data_out = []
-            for style_index in range(len(style_data)):
-                style_out = self.stylebank_net[style_label[style_index]](feature[style_index+1].view(1, *feature[style_index+1].shape))  # 128*H*W
-                data_out.append(style_out*feature[0])
+            content_size = len(content_in)
+            for content_idx in range(content_size):
+                for style_index in range(len(style_data)):
+                    style_out = self.stylebank_net[style_label[style_index]](feature[content_size + style_index].view(1, *feature[style_index+1].shape))  # 128*H*W
+                    data_out.append(style_out*feature[0])
             data_out = torch.cat(data_out, dim=0)
             data_out = self.decoder_net(data_out)
             # print(data_out.size())

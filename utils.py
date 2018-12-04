@@ -2,6 +2,7 @@ import pylab
 import matplotlib.pyplot as plt
 import torchvision
 from PIL import Image
+import time
 
 def load_image(filename, size=None, scale=None):
     img = Image.open(filename).convert('RGB')
@@ -33,3 +34,27 @@ def show_imgs(imgs):
     plt.imshow(grid.numpy().transpose((1, 2, 0)))
     plt.title('Batch from dataloader')
     plt.show()
+
+class Timer(object):
+    """A simple timer."""
+    def __init__(self):
+        self.total_time = 0.
+        self.calls = 0
+        self.start_time = 0.
+        self.diff = 0.
+        self.average_time = 0.
+
+    def tic(self):
+        # using time.time instead of time.clock because time time.clock
+        # does not normalize for multithreading
+        self.start_time = time.time()
+
+    def toc(self, average=True):
+        self.diff = time.time() - self.start_time
+        self.total_time += self.diff
+        self.calls += 1
+        self.average_time = self.total_time / self.calls
+        if average:
+            return self.average_time
+        else:
+            return self.diff
