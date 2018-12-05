@@ -68,8 +68,9 @@ class StyleBankNet(nn.Module):
             content_size = len(content_in)
             for content_idx in range(content_size):
                 for style_index in range(len(style_data)):
-                    style_out = self.stylebank_net[style_label[style_index]](feature[content_size + style_index].view(1, *feature[style_index+1].shape))  # 128*H*W
-                    data_out.append(style_out*feature[0])
+                    channel, height, width = feature[content_size + style_index].shape
+                    style_out = self.stylebank_net[style_label[style_index]](feature[content_size + style_index].view(1, channel, height, width))  # 128*H*W
+                    data_out.append(style_out*feature[content_idx])
             data_out = torch.cat(data_out, dim=0)
             data_out = self.decoder_net(data_out)
             # print(data_out.size())
