@@ -23,7 +23,7 @@ if __name__ == '__main__':
     # load data
     img_size = cfg['img_size']
     transform = transforms.Compose([
-        transforms.CenterCrop(img_size),
+        transforms.RandomCrop(img_size),
         transforms.ToTensor()
     ])
     content_data = MyDataSet(path=cfg['content_filepath'], transform=transform)
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     # optimizer = torch.optim.SGD(style_bank_net.parameters(), lr=cfg['lr'], momentum=cfg['momentum'])
     optimizer = torch.optim.Adam(style_bank_net.parameters(), lr=cfg['lr'])
     optimizer_ed = torch.optim.Adam(style_bank_net.parameters(), lr=cfg['lr'])
-    grid = torchvision.utils.make_grid(style_imgs.view(-1, 3, img_size, img_size), nrow=5)
+    grid = torchvision.utils.make_grid(style_imgs.view(-1, 3, img_size, img_size), nrow=cfg['style_size'])
     plt.imsave('output_image/style.png', grid.numpy().transpose((1, 2, 0)))
 
     # train
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     #         print('cuda...')
     #         data = content_image.cuda()
     content_image, content_label = next(iter(content_data_loader))
-    grid = torchvision.utils.make_grid(content_image.view(-1, 3, img_size, img_size), nrow=5)
+    grid = torchvision.utils.make_grid(content_image.view(-1, 3, img_size, img_size),  nrow=cfg['style_size'])
     plt.imsave('output_image/content.png', grid.numpy().transpose((1, 2, 0)))
 
     cuda_is_available = torch.cuda.is_available() & cfg['GPU']
@@ -76,53 +76,48 @@ if __name__ == '__main__':
         style_labels = style_labels.cuda()
 
     t = Timer()
-    for epoch in range(cfg['epochs']):
-        t.tic()
-        # print(epoch, end=' ')
+    t.tic()
+    for epoch in range(cfg['begin_epochs'], cfg['epochs']):
+        if epoch % 200 == 0:
+            print('*', end=' ')
         # stylizing branch
         for branch_epoch in range(cfg['T']):
             # forward
-            # output = style_bank_net(image)  # 对data做前向过程，得到输出
-            # print(content_image.size())
-
-            # show_imgs(content_image)
-
-            # show_imgs(style_imgs.view(-1,3,50,50))
             optimizer.zero_grad()
-            output = style_bank_net(content_image, style_imgs, style_labels)  # 对data做前向过程，得到输出
-            loss = style_bank_loss(output, content_image, style_imgs)  # 计算output和target之间的损失
-            # output = style_bank_net(content_image)  # 对data做前向过程，得到输出
+            output = style_bank_net(content_image, style_imgs, style_labels)
+            loss = style_bank_loss(output, content_image, style_imgs)
+            # output = style_bank_net(content_image)
             # loss = MSE(output, content_image)
-            # print('{}/{} iter, index {}   train loss: {}'.format(epoch, cfg['epochs'], index, loss))
-            loss.backward()  # 反向过程，计算损失关于各参数的梯度
-            optimizer.step()  # 利用计算得到的梯度对参数进行更新
+            # print('{}/{} iter, index {}   train loss: {}'.format(epoch, cfg['epochs']+1, index, loss))
+            loss.backward()
+            optimizer.step()
 
-            if epoch % cfg['LOG_INTERVAL'] == 0:
-                print('{}/{} iter, style_branth {}, train loss: {}'.format(epoch, cfg['epochs'], branch_epoch, loss))
+            if epoch == 0 or (epoch+1) % cfg['LOG_INTERVAL'] == 0:
+                print('{}/{} iter, style_branch {}, train loss: {}'.format(epoch+1, cfg['epochs'], branch_epoch, loss))
                 print('ouyput size:{}'.format(output.size()))
-                grid = torchvision.utils.make_grid(output.data.view(-1, 3, img_size, img_size), nrow=5).cpu().numpy().transpose(
+                grid = torchvision.utils.make_grid(output.data.view(-1, 3, img_size, img_size),  nrow=cfg['style_size']).cpu().numpy().transpose(
                     (1, 2, 0))
-                plt.imsave('output_image/iter{}_{}_style_branth{}'.format(epoch, cfg['epochs'], branch_epoch), grid)
+                plt.imsave('output_image/iter{}_{}_style_branch{}'.format(epoch+1, cfg['epochs'], branch_epoch), grid)
                 # print(grid.size())
                 # plt.imshow(grid)
-                # plt.title('{}/{} iter, index {}'.format(epoch, cfg['epochs'], index))
+                # plt.title('{}/{} iter, index {}'.format(epoch+1, cfg['epochs'], index))
                 # plt.show()
         # enoder-decoder branch
         optimizer_ed.zero_grad()
-        output = style_bank_net(content_image)  # 对data做前向过程，得到输出
+        output = style_bank_net(content_image)
         # print(content_image.size())
         # print(output.size())
-        loss = MSE(output, content_image)  # 计算output和target之间的损失
+        loss = MSE(output, content_image)
         # print(loss)
-        loss.backward()  # 反向过程，计算损失关于各参数的梯度
-        optimizer_ed.step()  # 利用计算得到的梯度对参数进行更新
-        if epoch % cfg['LOG_INTERVAL'] == 0:
+        loss.backward()
+        optimizer_ed.step()
+        if epoch == 0 or (epoch+1) % cfg['LOG_INTERVAL'] == 0:
             diff_time = t.toc()
-            print('{}/{} iter, enoder_decoder_branth {}, train loss: {}'.format(epoch, cfg['epochs'], branch_epoch, loss))
+            print('{}/{} iter, enoder_decoder_branch {}, train loss: {}'.format(epoch+1, cfg['epochs'], branch_epoch, loss))
             print('time {}, ouyput size:{}'.format(diff_time, output.size()))
             grid = torchvision.utils.make_grid(output.data.view(-1, 3, img_size, img_size), nrow=5).cpu().numpy().transpose(
                 (1, 2, 0))
-            plt.imsave('output_image/iter{}_{}_ed_branth{}'.format(epoch, cfg['epochs'], branch_epoch), grid)
+            plt.imsave('output_image/iter{}_{}_ed_branch{}'.format(epoch+1, cfg['epochs'], branch_epoch), grid)
 
             # save whole model (including stylebank)
             torch.save(style_bank_net.state_dict(), cfg['ouput_path']+'/bank.pth')
@@ -131,3 +126,12 @@ if __name__ == '__main__':
             torch.save(style_bank_net.decoder_net.state_dict(), cfg['ouput_path']+'/decode.pth')
             for i in range(len(style_imgs)):
                 torch.save(style_bank_net.stylebank_net[i].state_dict(), cfg['ouput_path']+'/style{}.pth'.format(i))
+            t.tic()
+
+        if (epoch + 1) % cfg['update_lr'] == 0:
+            lr = cfg['lr'] * (0.8 ** ((epoch + 1)/cfg['update_lr']))
+            print('learning rate: {}'.format(lr))
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr
+            for param_group in optimizer_ed.param_groups:
+                param_group['lr'] = lr
