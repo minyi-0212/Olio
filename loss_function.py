@@ -9,8 +9,8 @@ def gram_matrix(data_in):
     batch, channels, height, width = data_in.size()
     data = data_in.view(batch, channels, height * width)
     # [batch, channels, height * width] * [batch, height * width, channels]
-    # gram = torch.bmm(data, data.transpose(1, 2)) / (channels * height * width)
-    gram = torch.bmm(data, data.transpose(1, 2)) / (height * width)
+    gram = torch.bmm(data, data.transpose(1, 2)) / (channels * height * width)
+    # gram = torch.bmm(data, data.transpose(1, 2)) / (height * width)
     return gram
 
 def tv_loss(data_in):
@@ -24,9 +24,9 @@ def tv_loss(data_in):
 class StyleBnakLoss(torch.nn.Module):
     def __init__(self, vgg_model):
         super(StyleBnakLoss, self).__init__()
-        self.content_weight = 100
-        self.style_weight =  self.content_weight*100
-        self.tv_weight = 1
+        # self.content_weight = 100
+        # self.style_weight =  self.content_weight*100
+        # self.tv_weight = 1
         self.vgg_layer_content_used = {
             '20': "relu4_2"
         }
@@ -58,7 +58,7 @@ class StyleBnakLoss(torch.nn.Module):
             style_loss +=  MSE(gram_matrix(self.style_loss(O[j*style_size:(j+1)*style_size])), gram_matrix((self.style_loss(S))))
         total_variation_loss = tv_loss(O)
 
-        loss = self.content_weight * content_loss + self.style_weight * style_loss + self.tv_weight * total_variation_loss
+        # loss = self.content_weight * content_loss + self.style_weight * style_loss + self.tv_weight * total_variation_loss
         # print(content_loss, style_loss, total_variation_loss)
         # print(self.content_weight * content_loss, self.style_weight * style_loss, self.tv_weight * total_variation_loss)
-        return loss
+        return content_loss,style_loss,total_variation_loss
